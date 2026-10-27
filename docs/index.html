@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TuneProof</title>
+<style>
+  :root{--bg:#f7f8fa;--card:#fff;--ink:#14181f;--mute:#5b6675;--line:#e1e5eb;--acc:#2457d6;--ok:#16794a;--okbg:#e3f5ea;--bad:#a8261f;--badbg:#fde8e6;--warn:#8a5a00;--warnbg:#fff3d6;--b1:#9aa5b5;--b2:#2457d6}
+  @media (prefers-color-scheme:dark){:root{--bg:#0e1116;--card:#171c24;--ink:#e8edf4;--mute:#97a3b4;--line:#283140;--acc:#7ba3ff;--ok:#5fd493;--okbg:#12301f;--bad:#ff8f87;--badbg:#3a1a18;--warn:#f0c15b;--warnbg:#33290f;--b1:#5c6778;--b2:#7ba3ff}}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 system-ui,-apple-system,Segoe UI,sans-serif}
+  main{max-width:880px;margin:0 auto;padding:28px 16px 56px}
+  h1{margin:0;font-size:32px;letter-spacing:-.02em}
+  .tag{color:var(--mute);margin:4px 0 16px;font-size:18px}
+  .note{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;color:var(--mute);font-size:14px}
+  .note code{color:var(--ink)}
+  h2{font-size:14px;text-transform:uppercase;letter-spacing:.07em;color:var(--mute);margin:30px 0 10px}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
+  .card .v{font-size:28px;font-weight:700;letter-spacing:-.02em}
+  .card .l{color:var(--mute);font-size:13px}
+  .row{display:grid;grid-template-columns:110px 1fr;gap:10px;align-items:center;margin:8px 0;font-size:14px}
+  .bars{display:flex;flex-direction:column;gap:3px}
+  .bar{height:14px;border-radius:4px;min-width:2px}
+  .bar.b1{background:var(--b1)} .bar.b2{background:var(--b2)}
+  .bl{font-size:12px;color:var(--mute)}
+  .legend{display:flex;gap:16px;font-size:13px;color:var(--mute);margin-bottom:6px}
+  .legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+  .exp{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:10px 0}
+  .exp .top{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .badge{font-size:12px;font-weight:700;padding:2px 9px;border-radius:99px}
+  .ACCEPT{background:var(--okbg);color:var(--ok)} .REJECT{background:var(--badbg);color:var(--bad)} .START{background:var(--warnbg);color:var(--warn)}
+  .exp .a{font-weight:600} .exp .m{color:var(--mute);font-size:13px;margin-left:auto}
+  .exp p{margin:6px 0 0;color:var(--mute);font-size:14px}
+  ul{padding-left:20px;color:var(--mute)} li{margin:5px 0}
+  a{color:var(--acc)}
+  .foot{margin-top:34px;color:var(--mute);font-size:13px}
+</style>
+</head>
+<body>
+<main>
+  <h1>TuneProof</h1>
+  <p class="tag">Every speedup is a claim. Prove it.</p>
+  <div class="note">
+    An agent that speeds up an OpenCV 5 vision pipeline and refuses any speedup that quietly breaks the output.
+    This page is an <b>interactive viewer of a recorded run</b> on AWS EC2 (<span id="env"></span>). It does not run the tuner live;
+    to re-run it: <code>python -m coolpilot.run --images 6 --repeats 3 --grid</code>.
+    Code and tests: <a href="https://github.com/mnsdvk/tuneproof">github.com/mnsdvk/tuneproof</a>.
+  </div>
+
+  <h2>Result</h2>
+  <div class="cards" id="cards"></div>
+
+  <h2>Where the time went (ms per image)</h2>
+  <div class="legend"><span><i style="background:var(--b1)"></i>baseline</span><span><i style="background:var(--b2)"></i>tuned</span></div>
+  <div id="stages"></div>
+
+  <h2>What the agent tried, and why</h2>
+  <div id="trace"></div>
+
+  <h2>The quality guard</h2>
+  <p>A change is accepted only if the output agrees with the baseline output (F1 &ge; <b id="g1"></b>), the ground-truth F1 drops no more than <b id="g2"></b>, and it is at least 2% faster.</p>
+
+  <h2>Limitations</h2>
+  <ul>
+    <li>Synthetic data (6 images, 1024&times;1024). The underlying detector is modest (ground-truth F1 0.68).</li>
+    <li>The <code>threads=1</code> step was accepted for a 2.3% gain, which is within measurement noise. The real gain is the background setting.</li>
+    <li>The residual stage (about 64% of runtime after tuning) could not be reduced without failing the guard.</li>
+    <li>The planner is rule-based, not an LLM. COOL and Graviton were not used or evaluated.</li>
+  </ul>
+  <p class="foot">Source data: <code>results/coolpilot_aws.json</code>.</p>
+</main>
+<script>
+const D = {"label": "aws-stock", "env": {"opencv": "5.0.0", "file": "/home/ubuntu/v/lib/python3.12/site-packages/cv2/__init__.py", "machine": "x86_64", "python": "3.12.3", "default_threads": 2, "build_flags_mentioned": ["AVX2", "pthreads"]}, "corpus": {"images": 6, "size": 1024, "repeats": 3}, "guard": {"min_ref_f1": 0.95, "max_gt_f1_drop": 0.03}, "baseline": {"cfg": "scale=1.0 bg=median k=41 thr=2", "ms": 62.51, "stage_ms": {"resize": 0.0, "background": 24.96, "residual": 28.48, "morph": 3.19, "components": 5.92}, "gt_f1": 0.676}, "tuned": {"cfg": "scale=1.0 bg=median_ds2 k=41 thr=1", "ms": 43.85, "stage_ms": {"resize": 0.0, "background": 7.41, "residual": 28.03, "morph": 2.18, "components": 6.22}, "ref_f1": 0.974, "gt_f1": 0.676}, "speedup": 1.43, "agent_experiments": 5, "random_search_same_budget_speedup": {"mean": 1.07, "min": 1.0, "max": 1.36}, "trace": [{"n": 0, "action": "baseline", "cfg": {"scale": 1.0, "bg": "median", "ksize": 41, "threads": 2}, "ms": 62.51, "stage_ms": {"resize": 0.0, "background": 24.96, "residual": 28.48, "morph": 3.19, "components": 5.92}, "ref_f1": 1.0, "gt_f1": 0.676, "decision": "start", "reason": "profile baseline"}, {"n": 1, "action": "scale=0.75", "cfg": {"scale": 0.75, "bg": "median", "ksize": 41, "threads": 2}, "ms": 37.9, "stage_ms": {"resize": 4.04, "background": 14.62, "residual": 14.85, "morph": 0.91, "components": 3.46}, "ref_f1": 0.845, "gt_f1": 0.73, "decision": "REJECT(quality)", "reason": "'residual' is 46% of runtime (28.5 ms) -> step scale to 0.75; agreement with baseline output 0.845 < 0.95"}, {"n": 2, "action": "threads=1", "cfg": {"scale": 1.0, "bg": "median", "ksize": 41, "threads": 1}, "ms": 61.08, "stage_ms": {"resize": 0.0, "background": 24.92, "residual": 27.83, "morph": 2.15, "components": 6.22}, "ref_f1": 1.0, "gt_f1": 0.676, "decision": "ACCEPT", "reason": "'residual' is 46% of runtime (28.5 ms) -> step threads to 1; 62.5->61.1 ms, within guard"}, {"n": 3, "action": "bg=median_ds2", "cfg": {"scale": 1.0, "bg": "median_ds2", "ksize": 41, "threads": 1}, "ms": 43.85, "stage_ms": {"resize": 0.0, "background": 7.41, "residual": 28.03, "morph": 2.18, "components": 6.22}, "ref_f1": 0.974, "gt_f1": 0.676, "decision": "ACCEPT", "reason": "'background' is 41% of runtime (24.9 ms) -> step bg to median_ds2; 61.1->43.9 ms, within guard"}, {"n": 4, "action": "bg=median_ds4", "cfg": {"scale": 1.0, "bg": "median_ds4", "ksize": 41, "threads": 1}, "ms": 40.11, "stage_ms": {"resize": 0.0, "background": 3.92, "residual": 27.84, "morph": 2.15, "components": 6.23}, "ref_f1": 0.944, "gt_f1": 0.719, "decision": "REJECT(quality)", "reason": "'background' is 17% of runtime (7.4 ms) -> step bg to median_ds4; agreement with baseline output 0.944 < 0.95"}, {"n": 5, "action": "ksize=31", "cfg": {"scale": 1.0, "bg": "median_ds2", "ksize": 31, "threads": 1}, "ms": 44.23, "stage_ms": {"resize": 0.0, "background": 7.75, "residual": 27.98, "morph": 2.19, "components": 6.23}, "ref_f1": 0.949, "gt_f1": 0.657, "decision": "REJECT(quality)", "reason": "'background' is 17% of runtime (7.4 ms) -> step ksize to 31; agreement with baseline output 0.949 < 0.95"}], "exhaustive_grid": {"configs": 200, "best_cfg": "scale=1.0 bg=median_ds2 k=41 thr=1", "speedup": 1.41}};
+const $ = id => document.getElementById(id);
+const el = (t, c, txt) => { const e = document.createElement(t); if (c) e.className = c; if (txt !== undefined) e.textContent = txt; return e; };
+$("env").textContent = `${D.env.machine}, Python ${D.env.python}, stock OpenCV ${D.env.opencv}, t3.micro`;
+$("g1").textContent = D.guard.min_ref_f1; $("g2").textContent = D.guard.max_gt_f1_drop;
+
+[[D.baseline.ms.toFixed(1) + " ms", "baseline per image"],
+ [D.tuned.ms.toFixed(1) + " ms", "tuned per image"],
+ [D.speedup + "×", "faster"],
+ [D.agent_experiments, "experiments used"],
+ [D.exhaustive_grid.configs, "configs in the exhaustive grid (same best config)"],
+ [D.random_search_same_budget_speedup.mean + "×", "random search, same budget"]
+].forEach(([v, l]) => { const c = el("div", "card"); c.append(el("div", "v", v), el("div", "l", l)); $("cards").append(c); });
+
+const stages = Object.keys(D.baseline.stage_ms).filter(s => s !== "resize");
+const max = Math.max(...stages.map(s => Math.max(D.baseline.stage_ms[s], D.tuned.stage_ms[s])));
+stages.forEach(s => {
+  const r = el("div", "row"); r.append(el("div", "", s));
+  const b = el("div", "bars");
+  [["b1", D.baseline.stage_ms[s]], ["b2", D.tuned.stage_ms[s]]].forEach(([k, v]) => {
+    const w = el("div", "bar " + k); w.style.width = (100 * v / max).toFixed(1) + "%";
+    const line = el("div"); line.style.display = "flex"; line.style.alignItems = "center"; line.style.gap = "8px";
+    line.append(w, el("span", "bl", v.toFixed(1))); b.append(line);
+  });
+  r.append(b); $("stages").append(r);
+});
+
+D.trace.forEach(t => {
+  const kind = t.decision.startsWith("ACCEPT") ? "ACCEPT" : t.decision.startsWith("REJECT") ? "REJECT" : "START";
+  const e = el("div", "exp"), top = el("div", "top");
+  top.append(el("span", "badge " + kind, t.decision.replace("REJECT(", "REJECT · ").replace(")", "")),
+             el("span", "a", t.action),
+             el("span", "m", `${t.ms.toFixed(1)} ms · agreement ${t.ref_f1.toFixed(3)} · truth F1 ${t.gt_f1.toFixed(3)}`));
+  e.append(top, el("p", "", t.reason)); $("trace").append(e);
+});
+</script>
+</body>
+</html>
