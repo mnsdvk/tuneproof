@@ -1,0 +1,47 @@
+{
+  "label": "local-x86-pipOpenCV",
+  "opencv": "5.0.0",
+  "machine": "x86_64",
+  "python": "3.13.17",
+  "threads": 2,
+  "runs": 5,
+  "image": "1536x1536",
+  "ops": {
+    "GaussianBlur_5x5": {
+      "median_ms": 1.007,
+      "p95_ms": 1.088
+    },
+    "medianBlur_5": {
+      "median_ms": 2.829,
+      "p95_ms": 2.945
+    },
+    "medianBlur_41": {
+      "median_ms": 59.422,
+      "p95_ms": 59.481
+    },
+    "resize_0.5_linear": {
+      "median_ms": 0.368,
+      "p95_ms": 0.388
+    },
+    "cvtColor_BGR2GRAY": {
+      "median_ms": 0.438,
+      "p95_ms": 0.444
+    },
+    "warpAffine": {
+      "median_ms": 7.871,
+      "p95_ms": 7.959
+    },
+    "Canny": {
+      "median_ms": 24.27,
+      "p95_ms": 24.505
+    },
+    "morph_close_7x7": {
+      "median_ms": 1.133,
+      "p95_ms": 1.145
+    },
+    "VisionPilot_pipeline(512px)": {
+      "median_ms": 44.109,
+      "p95_ms": 44.378
+    }
+  }
+}

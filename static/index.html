@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>VisionPilot</title>
+<style>
+  :root{--bg:#0f1419;--panel:#171e26;--ink:#e6edf3;--mute:#8b98a5;--ok:#3fb950;--warn:#ff9500;--bad:#f85149;--acc:#58a6ff}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,sans-serif}
+  header{padding:20px 24px;border-bottom:1px solid #263040}
+  h1{margin:0;font-size:20px} header p{margin:4px 0 0;color:var(--mute)}
+  main{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;padding:16px 24px}
+  @media(max-width:900px){main{grid-template-columns:1fr}}
+  section{background:var(--panel);border-radius:10px;padding:14px}
+  h2{margin:0 0 10px;font-size:14px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute)}
+  button,label.btn{background:#222c38;color:var(--ink);border:1px solid #33425a;border-radius:8px;padding:8px 12px;cursor:pointer;font:inherit}
+  button:hover,label.btn:hover{border-color:var(--acc)} button:focus-visible,label.btn:focus-within{outline:2px solid var(--acc)}
+  .row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+  img{max-width:100%;border-radius:6px;image-rendering:pixelated}
+  .imgs{display:grid;grid-template-columns:1fr 1fr;gap:8px} .imgs figcaption{color:var(--mute);font-size:12px}
+  figure{margin:0}
+  #trace{max-height:520px;overflow:auto;font-size:13px}
+  .st{display:grid;grid-template-columns:22px 1fr;gap:8px;padding:6px 0;border-bottom:1px solid #1f2a37}
+  .k{font-size:11px;padding:1px 6px;border-radius:99px;height:fit-content;text-align:center}
+  .perceive{background:#12334f;color:#79c0ff}.decide{background:#3d2b0a;color:#e3b341}.act{background:#173a22;color:#56d364}
+  .why{color:var(--mute)} code{color:#c9d1d9}
+  .rev{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #1f2a37}
+  .badge{display:inline-block;padding:1px 8px;border-radius:99px;font-size:12px}
+  .stats span{margin-right:14px;color:var(--mute)} .stats b{color:var(--ink)}
+  #msg{color:var(--mute);min-height:1.4em}
+</style>
+</head>
+<body>
+<header>
+  <h1>VisionPilot</h1>
+  <p>An OpenCV 5 inspection agent: what it sees decides what it does next.</p>
+</header>
+<main>
+  <section aria-label="Input">
+    <h2>1 · Pick a frame</h2>
+    <div class="row" id="samples"></div>
+    <div class="row"><label class="btn">Upload image<input id="file" type="file" accept="image/*" hidden></label></div>
+    <div id="msg" role="status" aria-live="polite">Choose a sample or upload an image.</div>
+    <div class="stats" id="stats"></div>
+    <div class="imgs">
+      <figure><img id="inimg" alt="Input frame" hidden><figcaption>Input</figcaption></figure>
+      <figure><img id="outimg" alt="Analysed frame with detections" hidden><figcaption>Agent output (green = confirmed, orange = needs human)</figcaption></figure>
+    </div>
+    <h2 style="margin-top:14px">3 · Human approval queue</h2>
+    <div id="review">Nothing to review yet.</div>
+  </section>
+  <section aria-label="Agent trace">
+    <h2>2 · Agent trace (evidence → decision → action)</h2>
+    <div id="trace">Run an inspection to see the trace.</div>
+  </section>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const modes=[["dark","Under-exposed"],["blur","Blurry"],["noise","Noisy"],["mixed","All three"],["clean","Clean"]];
+modes.forEach(([m,l])=>{const b=document.createElement("button");b.textContent=l;b.onclick=()=>run("/api/sample?mode="+m+"&seed="+Math.floor(Math.random()*20));$("samples").append(b)});
+$("file").onchange=async e=>{const f=e.target.files[0];if(!f)return;run("/api/inspect",{method:"POST",body:await f.arrayBuffer()})};
+async function run(url,opt){
+  $("msg").textContent="Analysing…";
+  try{
+    const r=await fetch(url,opt);const j=await r.json();
+    if(!r.ok)throw new Error(j.error||r.status);
+    render(j);
+  }catch(err){$("msg").textContent="Error: "+err.message}
+}
+function esc(s){return String(s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]))}
+function render(j){
+  $("inimg").src="data:image/png;base64,"+j.input_png;$("inimg").hidden=false;
+  $("outimg").src="data:image/png;base64,"+j.overlay_png;$("outimg").hidden=false;
+  $("msg").textContent="Done.";
+  const gt=j.ground_truth_boxes?` <span>ground truth: <b>${j.ground_truth_boxes.length}</b></span>`:"";
+  $("stats").innerHTML=`<span>confirmed: <b>${j.defects.length}</b></span><span>human review: <b>${j.needs_review.length}</b></span>${gt}
+    <span>repairs kept: <b>${j.actions_kept.join(", ")||"none"}</b></span><span>rolled back: <b>${j.actions_rolled_back.join(", ")||"none"}</b></span>
+    <span>agent time: <b>${j.inspect_ms} ms</b></span><span>OpenCV <b>${j.runtime.opencv}</b> on <b>${j.runtime.machine}</b></span>`;
+  $("trace").innerHTML=j.trace.map(s=>`<div class="st"><span class="k ${s.kind}">${s.kind[0].toUpperCase()}</span>
+    <div><code>${esc(s.tool)}</code> <span class="why">${esc(s.reason||"")}</span><br><small class="why">${esc(JSON.stringify(s.evidence).slice(0,180))}</small></div></div>`).join("");
+  $("review").innerHTML=j.needs_review.length?j.needs_review.map((d,i)=>`<div class="rev"><span>Item ${i+1} at [${d.bbox.join(", ")}] · score ${d.score}, zoom ${d.zoom_score}</span>
+    <span><button data-i="${i}" data-v="defect">Real defect</button> <button data-i="${i}" data-v="ok">False alarm</button></span></div>`).join(""):"Nothing needs a human.";
+  document.querySelectorAll("#review button").forEach(b=>b.onclick=async()=>{
+    const d=j.needs_review[b.dataset.i];
+    await fetch("/api/approve",{method:"POST",body:JSON.stringify({bbox:d.bbox,decision:b.dataset.v})});
+    b.parentElement.innerHTML="<span class='badge' style='background:#173a22'>recorded: "+b.dataset.v+"</span>";
+  });
+}
+</script>
+</body>
+</html>

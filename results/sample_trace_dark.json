@@ -1,0 +1,270 @@
+{
+ "inspect_ms": 52.9,
+ "defects": [],
+ "needs_review": [
+  {
+   "bbox": [
+    11,
+    168,
+    12,
+    9
+   ],
+   "area": 39.0,
+   "peak_z": 5.09,
+   "score": 18.79,
+   "decision": "human_review",
+   "zoom_score": 10.98
+  },
+  {
+   "bbox": [
+    28,
+    149,
+    18,
+    15
+   ],
+   "area": 56.0,
+   "peak_z": 4.53,
+   "score": 18.32,
+   "decision": "human_review",
+   "zoom_score": 11.54
+  }
+ ],
+ "trace": [
+  {
+   "n": 1,
+   "kind": "perceive",
+   "tool": "assess_quality",
+   "evidence": {
+    "sharpness": 43.82,
+    "mean": 40.9,
+    "p5": 23.0,
+    "p95": 61.0,
+    "dynamic_range": 38.0,
+    "noise_sigma": 1.48
+   },
+   "reason": "",
+   "ms": 9.23
+  },
+  {
+   "n": 2,
+   "kind": "decide",
+   "tool": "fix_exposure",
+   "evidence": {},
+   "reason": "mean 40.9 < 90.0 (under-exposed)",
+   "ms": 0.0
+  },
+  {
+   "n": 3,
+   "kind": "act",
+   "tool": "fix_exposure",
+   "evidence": {
+    "op": "gamma",
+    "gamma": 0.38
+   },
+   "reason": "",
+   "ms": 13.3
+  },
+  {
+   "n": 4,
+   "kind": "decide",
+   "tool": "keep_repair",
+   "evidence": {
+    "action": "fix_exposure"
+   },
+   "reason": "confident 0->0, candidates 0->2",
+   "ms": 0.0
+  },
+  {
+   "n": 5,
+   "kind": "perceive",
+   "tool": "assess_quality",
+   "evidence": {
+    "sharpness": 60.69,
+    "mean": 125.8,
+    "p5": 102.0,
+    "p95": 148.0,
+    "dynamic_range": 46.0,
+    "noise_sigma": 2.97
+   },
+   "reason": "",
+   "ms": 7.79
+  },
+  {
+   "n": 6,
+   "kind": "decide",
+   "tool": "stop_repair",
+   "evidence": {},
+   "reason": "quality acceptable or all repairs tried",
+   "ms": 0.0
+  },
+  {
+   "n": 7,
+   "kind": "perceive",
+   "tool": "detect_defects",
+   "evidence": {
+    "n_candidates": 2,
+    "scale": 1.0,
+    "threshold_z": 3.0,
+    "top": [
+     {
+      "bbox": [
+       11,
+       168,
+       12,
+       9
+      ],
+      "area": 39.0,
+      "peak_z": 5.09,
+      "score": 18.79
+     },
+     {
+      "bbox": [
+       28,
+       149,
+       18,
+       15
+      ],
+      "area": 56.0,
+      "peak_z": 4.53,
+      "score": 18.32
+     }
+    ]
+   },
+   "reason": "",
+   "ms": 0.01
+  },
+  {
+   "n": 8,
+   "kind": "decide",
+   "tool": "zoom_tile",
+   "evidence": {
+    "bbox": [
+     11,
+     168,
+     12,
+     9
+    ],
+    "score": 18.79
+   },
+   "reason": "ambiguous score 18.79 in [12.0,22.0) -> look closer",
+   "ms": 0.0
+  },
+  {
+   "n": 9,
+   "kind": "act",
+   "tool": "zoom_tile",
+   "evidence": {
+    "op": "zoom_tile",
+    "origin": [
+     0,
+     144
+    ],
+    "factor": 3.0,
+    "tile_shape": [
+     57,
+     47
+    ]
+   },
+   "reason": "",
+   "ms": 0.01
+  },
+  {
+   "n": 10,
+   "kind": "perceive",
+   "tool": "detect_defects(zoom)",
+   "evidence": {
+    "zoom_score": 10.98,
+    "n_candidates": 1
+   },
+   "reason": "",
+   "ms": 2.44
+  },
+  {
+   "n": 11,
+   "kind": "decide",
+   "tool": "request_human_approval",
+   "evidence": {
+    "bbox": [
+     11,
+     168,
+     12,
+     9
+    ]
+   },
+   "reason": "zoom score 10.98 < 18.0: evidence inconclusive",
+   "ms": 0.0
+  },
+  {
+   "n": 12,
+   "kind": "decide",
+   "tool": "zoom_tile",
+   "evidence": {
+    "bbox": [
+     28,
+     149,
+     18,
+     15
+    ],
+    "score": 18.32
+   },
+   "reason": "ambiguous score 18.32 in [12.0,22.0) -> look closer",
+   "ms": 0.0
+  },
+  {
+   "n": 13,
+   "kind": "act",
+   "tool": "zoom_tile",
+   "evidence": {
+    "op": "zoom_tile",
+    "origin": [
+     4,
+     125
+    ],
+    "factor": 3.0,
+    "tile_shape": [
+     63,
+     66
+    ]
+   },
+   "reason": "",
+   "ms": 0.01
+  },
+  {
+   "n": 14,
+   "kind": "perceive",
+   "tool": "detect_defects(zoom)",
+   "evidence": {
+    "zoom_score": 11.54,
+    "n_candidates": 1
+   },
+   "reason": "",
+   "ms": 2.37
+  },
+  {
+   "n": 15,
+   "kind": "decide",
+   "tool": "request_human_approval",
+   "evidence": {
+    "bbox": [
+     28,
+     149,
+     18,
+     15
+    ]
+   },
+   "reason": "zoom score 11.54 < 18.0: evidence inconclusive",
+   "ms": 0.0
+  }
+ ],
+ "actions_kept": [
+  "fix_exposure"
+ ],
+ "actions_rolled_back": [],
+ "runtime": {
+  "opencv": "5.0.0",
+  "machine": "x86_64",
+  "build_flags_seen": [
+   "AVX2"
+  ]
+ }
+}

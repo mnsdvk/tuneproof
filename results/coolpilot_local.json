@@ -1,0 +1,194 @@
+{
+  "label": "local-x86-pip",
+  "env": {
+    "opencv": "5.0.0",
+    "file": "/usr/local/lib/python3.13/site-packages/cv2/__init__.py",
+    "machine": "x86_64",
+    "python": "3.13.17",
+    "default_threads": 2,
+    "build_flags_mentioned": [
+      "AVX2",
+      "pthreads"
+    ]
+  },
+  "corpus": {
+    "images": 6,
+    "size": 1024,
+    "repeats": 2
+  },
+  "guard": {
+    "min_ref_f1": 0.95,
+    "max_gt_f1_drop": 0.03
+  },
+  "baseline": {
+    "cfg": "scale=1.0 bg=median k=41 thr=2",
+    "ms": 55.58,
+    "stage_ms": {
+      "resize": 0.0,
+      "background": 22.9,
+      "residual": 26.63,
+      "morph": 2.31,
+      "components": 3.73
+    },
+    "gt_f1": 0.676
+  },
+  "tuned": {
+    "cfg": "scale=1.0 bg=median_ds2 k=41 thr=2",
+    "ms": 36.29,
+    "stage_ms": {
+      "resize": 0.0,
+      "background": 6.24,
+      "residual": 24.35,
+      "morph": 2.14,
+      "components": 3.55
+    },
+    "ref_f1": 0.974,
+    "gt_f1": 0.676
+  },
+  "speedup": 1.53,
+  "agent_experiments": 5,
+  "random_search_same_budget_speedup": {
+    "mean": 1.1,
+    "min": 1.0,
+    "max": 1.5
+  },
+  "trace": [
+    {
+      "n": 0,
+      "action": "baseline",
+      "cfg": {
+        "scale": 1.0,
+        "bg": "median",
+        "ksize": 41,
+        "threads": 2
+      },
+      "ms": 55.58,
+      "stage_ms": {
+        "resize": 0.0,
+        "background": 22.9,
+        "residual": 26.63,
+        "morph": 2.31,
+        "components": 3.73
+      },
+      "ref_f1": 1.0,
+      "gt_f1": 0.676,
+      "decision": "start",
+      "reason": "profile baseline"
+    },
+    {
+      "n": 1,
+      "action": "scale=0.75",
+      "cfg": {
+        "scale": 0.75,
+        "bg": "median",
+        "ksize": 41,
+        "threads": 2
+      },
+      "ms": 31.09,
+      "stage_ms": {
+        "resize": 1.62,
+        "background": 12.7,
+        "residual": 13.97,
+        "morph": 0.64,
+        "components": 2.15
+      },
+      "ref_f1": 0.845,
+      "gt_f1": 0.73,
+      "decision": "REJECT(quality)",
+      "reason": "'residual' is 48% of runtime (26.6 ms) -> step scale to 0.75; agreement with baseline output 0.845 < 0.95"
+    },
+    {
+      "n": 2,
+      "action": "threads=1",
+      "cfg": {
+        "scale": 1.0,
+        "bg": "median",
+        "ksize": 41,
+        "threads": 1
+      },
+      "ms": 61.66,
+      "stage_ms": {
+        "resize": 0.0,
+        "background": 24.06,
+        "residual": 28.63,
+        "morph": 2.11,
+        "components": 6.83
+      },
+      "ref_f1": 1.0,
+      "gt_f1": 0.676,
+      "decision": "REJECT(not faster)",
+      "reason": "'residual' is 48% of runtime (26.6 ms) -> step threads to 1; 61.7 ms vs 55.6 ms"
+    },
+    {
+      "n": 3,
+      "action": "bg=median_ds2",
+      "cfg": {
+        "scale": 1.0,
+        "bg": "median_ds2",
+        "ksize": 41,
+        "threads": 2
+      },
+      "ms": 36.29,
+      "stage_ms": {
+        "resize": 0.0,
+        "background": 6.24,
+        "residual": 24.35,
+        "morph": 2.14,
+        "components": 3.55
+      },
+      "ref_f1": 0.974,
+      "gt_f1": 0.676,
+      "decision": "ACCEPT",
+      "reason": "'background' is 41% of runtime (22.9 ms) -> step bg to median_ds2; 55.6->36.3 ms, within guard"
+    },
+    {
+      "n": 4,
+      "action": "bg=median_ds4",
+      "cfg": {
+        "scale": 1.0,
+        "bg": "median_ds4",
+        "ksize": 41,
+        "threads": 2
+      },
+      "ms": 33.65,
+      "stage_ms": {
+        "resize": 0.0,
+        "background": 3.29,
+        "residual": 24.74,
+        "morph": 2.11,
+        "components": 3.5
+      },
+      "ref_f1": 0.944,
+      "gt_f1": 0.719,
+      "decision": "REJECT(quality)",
+      "reason": "'background' is 17% of runtime (6.2 ms) -> step bg to median_ds4; agreement with baseline output 0.944 < 0.95"
+    },
+    {
+      "n": 5,
+      "action": "ksize=31",
+      "cfg": {
+        "scale": 1.0,
+        "bg": "median_ds2",
+        "ksize": 31,
+        "threads": 2
+      },
+      "ms": 36.9,
+      "stage_ms": {
+        "resize": 0.0,
+        "background": 6.55,
+        "residual": 24.67,
+        "morph": 2.16,
+        "components": 3.52
+      },
+      "ref_f1": 0.949,
+      "gt_f1": 0.657,
+      "decision": "REJECT(quality)",
+      "reason": "'background' is 17% of runtime (6.2 ms) -> step ksize to 31; agreement with baseline output 0.949 < 0.95"
+    }
+  ],
+  "exhaustive_grid": {
+    "configs": 200,
+    "best_cfg": "scale=1.0 bg=median_ds2 k=41 thr=2",
+    "speedup": 1.53
+  }
+}
